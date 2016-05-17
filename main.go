@@ -44,8 +44,6 @@ func (f *InputData)UnmarshalJSON(data []byte) error {
 }
 
 func main() {
-	var userdata []InputData
-
 /*
 	resp, err := getHTTPData(sourceLink)
 	if err != nil {
@@ -54,25 +52,18 @@ func main() {
 	rob, err := ioutil.ReadAll(resp)
 */
 	resp := strings.NewReader(data)
-	decJSON := json.NewDecoder(resp)
-	err := decJSON.Decode(&userdata)
-	if err != nil {
-		fmt.Println("Error decoding data.")
-	}
+	userdata, err := getRawData(resp)
 
-
-
-	for i, _ := range userdata {
-		fmt.Printf("%s\n", userdata[i])
-	}
+	fmt.Println(userdata, err)
 
 	return
 }
-/*
-func getRawData(r io.Reader) InputData {
 
+func getRawData(r io.Reader) (userdata []InputData, err error) {
+	err = json.NewDecoder(r).Decode(&userdata)
+	return userdata, err
 }
-*/
+
 func getHTTPData(l string) (io.Reader, error) {
 	resp, err := http.Get(l)
 	if err != nil || resp == nil {
