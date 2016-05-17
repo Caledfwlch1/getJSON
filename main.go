@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"encoding/json"
 	"net/http"
-//	"time"
+	"time"
 //	"io/ioutil"
 //	"strings"
 	"io"
 	"strings"
 	"strconv"
+	"sort"
 )
 
 const sourceLink = "http://82.196.1.83:9570"
@@ -21,7 +22,7 @@ type InputData struct {
 	Age		int
 	Gender		string
 	Marital		bool
-	Last_login	string
+	Last_login	time.Time
 }
 
 var (
@@ -37,9 +38,9 @@ func (f *InputData)UnmarshalJSON(data []byte) error {
 	f.Last_name	= m["Last name"]
 	f.First_name	= m["First name"]
 	f.Age, _	= strconv.Atoi(m["Age"])
-	f.Gender	= m["Gender"]
+	f.Gender 	= m["Gender"]
 	f.Marital, _	= strconv.ParseBool(m["matirial"])
-	f.Last_login	= m["Last login"]
+	f.Last_login	= convData(m["Last login"])
 	return nil
 }
 
@@ -53,9 +54,14 @@ func main() {
 */
 	resp := strings.NewReader(data)
 	userdata, err := getRawData(resp)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	fmt.Println(userdata, err)
+	SortByAge(userdata)
 
+	compileData(userdata)
 	return
 }
 
@@ -74,6 +80,70 @@ func getHTTPData(l string) (io.Reader, error) {
 }
 
 func (s InputData)String() string {
-	return fmt.Sprintf("Last name = %s, First name = %s, Age = %d, Gender = %s, Marital = %t, Last login = %s.",
+	return fmt.Sprintf("Last name = %s, First name = %s, Age = %d, Gender = %t, Marital = %t, Last login = %s\n",
 	s.Last_name, s.First_name, s.Age, s.Gender, s.Marital, s.Last_login)
 }
+
+func convData(s string) time.Time {
+	if s == "" {
+		return time.Date(1, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+	}
+	dT := strings.Split(s," ")
+	d := strings.Split(dT[0], ".")
+	t := strings.Split(dT[1], ":")
+	y  , _ := strconv.Atoi(d[2])
+	m  , _ := strconv.Atoi(d[1])
+	day, _ := strconv.Atoi(d[0])
+	h  , _ := strconv.Atoi(t[0])
+	min, _ := strconv.Atoi(t[1])
+	return time.Date(y, time.Month(m), day, h, min, 0, 0, time.UTC)
+}
+
+func SortByAge(s []InputData) {
+	ageUp := func(p1, p2 *InputData) bool {
+		return p1.Age < p2.Age
+	}
+	ageDown := func(p1, p2 *InputData) bool {
+		return p1.Age > p2.Age
+	}
+	By(ageUp).Sort(s)
+	fmt.Println("By age up:", s)
+
+	By(ageDown).Sort(s)
+	fmt.Println("By age down:", s)
+}
+
+type By func(p1, p2 *InputData) bool
+
+func (by By) Sort(data []InputData) {
+	ps := &InputDataSorter{
+		data: data,
+		by:     by,
+	}
+	sort.Sort(ps)
+}
+
+type InputDataSorter struct {
+	data []InputData
+	by      func(p1, p2 *InputData) bool
+}
+
+func (s *InputDataSorter) Len() int {
+	return len(s.data)
+}
+
+func (s *InputDataSorter) Swap(i, j int) {
+	s.data[i], s.data[j] = s.data[j], s.data[i]
+}
+
+func (s *InputDataSorter) Less(i, j int) bool {
+	return s.by(&s.data[i], &s.data[j])
+}
+
+func compileData(d []InputData) {
+
+	return
+}
+
+
+
