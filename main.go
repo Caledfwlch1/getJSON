@@ -6,13 +6,15 @@ import (
 	"net/http"
 	"time"
 	"io"
-	"strings"
 	"strconv"
 	"sort"
 )
 
-const sourceLink = "http://82.196.1.83:9570"
+const (
+	sourceLink	= "http://82.196.1.83:9570"
+	shortForm	= "02.01.2006 15:04"
 //const data = "[{\"Last name\": \"John\",\"First name\": \"Doe\",\"Age\": \"35\",\"Gender\": \"m\",\"marital\": \"true\",\"Last login\": \"14.05.2016 12:37\"},{\"Last name\": \"Joshua\",\"First name\": \"Star\",\"Age\": \"17\",\"Gender\": \"m\",\"marital\": \"false\",\"Last login\": \"12.05.2016 17:30\"},{\"Last name\": \"Jane\",\"First name\": \"Sith\",\"Age\": \"20\",\"Gender\": \"f\",\"marital\": \"true\",\"Last login\": \"02.05.2016 07:22\"},{\"Last name\": \"Robert\",\"First name\": \"Milson\",\"Age\": \"44\",\"Gender\": \"m\",\"marital\": \"true\",\"Last login\": \"10.04.2016 10:00\"},{\"Last name\": \"Elisabeth\",\"First name\": \"Morth\",\"Age\": \"19\",\"Gender\": \"f\",\"marital\": \"true\",\"Last login\": \"14.04.2016 17:31\"},{\"Last name\": \"Bary\",\"First name\": \"Sorm\",\"Age\": \"20\",\"Gender\": \"m\",\"marital\": \"false\",\"Last login\": \"11.01.2016 12:27\"},{\"Last name\": \"Mary\",\"First name\": \"Douson\",\"Age\": \"33\",\"Gender\": \"f\",\"marital\": \"true\",\"Last login\": \"\"},{\"Last name\": \"Sarah\",\"First name\": \"Connor\",\"Age\": \"28\",\"Gender\": \"f\",\"marital\": \"true\",\"Last login\": \"02.03.2014 22:31\"},{\"Last name\": \"Alistar\",\"First name\": \"Tampler\",\"Age\": \"30\",\"Gender\": \"m\",\"marital\": \"true\",\"Last login\": \"12.01.2016 17:30\"},{\"Last name\": \"Veronica\",\"First name\": \"Ingil\",\"Age\": \"22\",\"Gender\": \"f\",\"marital\": \"false\",\"Last login\": \"22.04.2016 12:55\"},{\"Last name\": \"Martin\",\"First name\": \"Mulen\",\"Age\": \"12\",\"Gender\": \"m\",\"marital\": \"false\",\"Last login\": \"18.06.2015 14:00\"},{\"Last name\": \"Monica\",\"First name\": \"Doust\",\"Age\": \"76\",\"Gender\": \"f\",\"marital\": \"true\",\"Last login\": \"\"},{\"Last name\": \"Michael\",\"First name\": \"Kurst\",\"Age\": \"27\",\"Gender\": \"m\",\"marital\": \"false\",\"Last login\": \"07.03.2015 12:12\"}]"
+)
 
 type InputData struct {
 	Last_name	string
@@ -38,7 +40,7 @@ func (f *InputData)UnmarshalJSON(data []byte) error {
 	f.Age, _	= strconv.Atoi(m["Age"])
 	f.Gender 	= m["Gender"]
 	f.Marital, _	= strconv.ParseBool(m["marital"])
-	f.Last_login	= convData(m["Last login"])
+	f.Last_login, _	= time.Parse(shortForm, m["Last login"])
 	return nil
 }
 
@@ -77,23 +79,8 @@ func getHTTPData(l string) (io.Reader, error) {
 }
 
 func (s InputData)String() string {
-	return fmt.Sprintf("Last name = %s, First name = %s, Age = %d, Gender = %s, Marital = %t, Last login = %s\n",
-	s.Last_name, s.First_name, s.Age, s.Gender, s.Marital, s.Last_login.Format(time.UnixDate))
-}
-
-func convData(s string) time.Time {
-	if s == "" {
-		return time.Date(1, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
-	}
-	dT := strings.Split(s," ")
-	d := strings.Split(dT[0], ".")
-	t := strings.Split(dT[1], ":")
-	y  , _ := strconv.Atoi(d[2])
-	m  , _ := strconv.Atoi(d[1])
-	day, _ := strconv.Atoi(d[0])
-	h  , _ := strconv.Atoi(t[0])
-	min, _ := strconv.Atoi(t[1])
-	return time.Date(y, time.Month(m), day, h, min, 0, 0, time.UTC)
+	return fmt.Sprintf("Last name = %s, First name = %s, Age = %d, Gender = %s, Marital = %t, Last login = %s, Last login Unix= %d\n",
+	s.Last_name, s.First_name, s.Age, s.Gender, s.Marital, s.Last_login.Format(time.UnixDate), s.Last_login.Unix())
 }
 
 func SortByAge(s []InputData) {
@@ -104,10 +91,10 @@ func SortByAge(s []InputData) {
 		return p1.Age > p2.Age
 	}
 	By(ageUp).Sort(s)
-	fmt.Println("By age up:", s)
+	fmt.Println("Sort by age up:\n", s)
 
 	By(ageDown).Sort(s)
-	fmt.Println("By age down:", s)
+	fmt.Println("Sort by age down:\n", s)
 }
 
 type By func(p1, p2 *InputData) bool
@@ -150,7 +137,7 @@ func compileData(d []InputData) {
 		ar[el.Gender][el.Marital] = append(ar[el.Gender][el.Marital], person{el.Last_name, el.First_name})
 	}
 
-	fmt.Println(ar)
+	fmt.Println("Compiled data:\n", ar)
 
 	return
 }
