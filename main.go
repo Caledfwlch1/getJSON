@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-//	"io/ioutil"
-//	"strings"
 	"io"
 	"strings"
 	"strconv"
@@ -50,7 +48,6 @@ func main() {
 	if err != nil {
 		return
 	}
-	//rob, err := ioutil.ReadAll(resp)
 
 //	resp := strings.NewReader(data)
 	userdata, err := getRawData(resp)
